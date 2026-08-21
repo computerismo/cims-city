@@ -40,8 +40,12 @@ export function createSceneRuntime(container: HTMLElement, options: RuntimeOptio
   const sceneBackground = new THREE.Color('#e0e8e4');
   scene.background = sceneBackground;
 
-  // Add gradient sky sphere (cool blue/white)
-  const skyGeometry = new THREE.SphereGeometry(200, 32, 32);
+  // Add gradient sky sphere (cool blue/white). The dome is re-centred on the
+  // camera every frame and rendered first without depth test, so it can never
+  // clip through the terrain (the 400x400 land plateau has corners ~283 units
+  // from the map centre) no matter how far the camera zooms out. Radius stays
+  // well inside the far plane so the shell is never frustum-clipped.
+  const skyGeometry = new THREE.SphereGeometry(400, 32, 32);
   const skyMaterial = new THREE.ShaderMaterial({
     uniforms: {
       topColor: { value: new THREE.Color('#c0d8e8') },    // cool blue
@@ -74,15 +78,19 @@ export function createSceneRuntime(container: HTMLElement, options: RuntimeOptio
     `,
     side: THREE.BackSide,
     depthWrite: false,
+    depthTest: false,
   });
   const sky = new THREE.Mesh(skyGeometry, skyMaterial);
   sky.name = 'sky:gradient';
+  sky.renderOrder = -1;
   scene.add(sky);
 
   const initialRect = container.getBoundingClientRect();
   const initialWidth = Math.max(1, initialRect.width);
   const initialHeight = Math.max(1, initialRect.height);
-  const camera = new THREE.PerspectiveCamera(40, initialWidth / initialHeight, 0.1, 260);
+  // Far plane covers the farthest land corner (~283 from the map centre) from
+  // the most distant overview camera pose (~185 out), with headroom.
+  const camera = new THREE.PerspectiveCamera(40, initialWidth / initialHeight, 0.1, 500);
   camera.up.set(0, 1, 0);
   camera.position.set(38, 34, 48);
   camera.lookAt(0, 0, 0);
@@ -133,6 +141,9 @@ export function createSceneRuntime(container: HTMLElement, options: RuntimeOptio
     frameId = undefined;
     if (disposed) return;
     staticRenderRequested = false;
+    // Keep the sky dome centred on the camera so it always fills the
+    // background and its shell never intersects the terrain.
+    sky.position.copy(camera.position);
     options.beforeRender?.();
     renderer.render(scene, camera);
     if (continuousReasons.size > 0) scheduleFrame();

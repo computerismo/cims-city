@@ -145,7 +145,7 @@ describe('scene runtime', () => {
 
     expect(runtime.scene.name).toBe('scene:neighborhood');
     expect(runtime.camera).toBeInstanceOf(THREE.PerspectiveCamera);
-    expect([runtime.camera.fov, runtime.camera.aspect, runtime.camera.near, runtime.camera.far]).toEqual([40, 2, 0.1, 260]);
+    expect([runtime.camera.fov, runtime.camera.aspect, runtime.camera.near, runtime.camera.far]).toEqual([40, 2, 0.1, 500]);
     expect(runtime.camera.up.toArray()).toEqual([0, 1, 0]);
     expect(runtime.camera.position.toArray()).toEqual([38, 34, 48]);
 
@@ -183,7 +183,7 @@ describe('scene runtime', () => {
     runtime.dispose();
   });
 
-  it('adds a gradient sky sphere to the scene', () => {
+  it('adds a gradient sky sphere that cannot clip or occlude the map', () => {
     const { runtime } = createHarness();
 
     const sky = runtime.scene.getObjectByName('sky:gradient');
@@ -191,6 +191,30 @@ describe('scene runtime', () => {
     expect(sky).toBeInstanceOf(THREE.Mesh);
     expect((sky as THREE.Mesh).geometry).toBeInstanceOf(THREE.SphereGeometry);
     expect((sky as THREE.Mesh).material).toBeInstanceOf(THREE.ShaderMaterial);
+
+    // The dome (radius 400) must clear the land plateau corners (~283 from the
+    // map centre) and stay inside the far plane, draw before everything, and
+    // never write or test depth so it can never carve into the terrain.
+    const geometry = (sky as THREE.Mesh).geometry as THREE.SphereGeometry;
+    expect(geometry.parameters.radius).toBe(400);
+    expect(sky!.renderOrder).toBe(-1);
+    const material = (sky as THREE.Mesh).material as THREE.ShaderMaterial;
+    expect(material.side).toBe(THREE.BackSide);
+    expect(material.depthWrite).toBe(false);
+    expect(material.depthTest).toBe(false);
+
+    runtime.dispose();
+  });
+
+  it('recentres the sky dome on the camera every rendered frame', () => {
+    const { runtime, raf } = createHarness();
+
+    const sky = runtime.scene.getObjectByName('sky:gradient')!;
+    runtime.camera.position.set(120, 80, -60);
+    runtime.requestRender();
+    raf.flushNext();
+
+    expect(sky.position.toArray()).toEqual(runtime.camera.position.toArray());
 
     runtime.dispose();
   });

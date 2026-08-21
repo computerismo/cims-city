@@ -95,20 +95,20 @@ describe('createAppShell', () => {
     expect(media.removeEventListener).toHaveBeenCalledOnce();
   });
 
-  it('moves focused legend disclosure into the visible detail sheet before compact mode hides it', () => {
+  it('moves the focused legend control into the visible detail sheet when compact mode hides the explorer', () => {
     const media = createCompactMedia(false);
     vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(media));
     const { root, shell } = mount();
     renderCims(shell, 'smart-textiles');
     const legendDisclosure = root.querySelector<HTMLElement>('.route-legend')!;
     const legendToggle = root.querySelector<HTMLButtonElement>('[data-legend-toggle]')!;
-    legendToggle.click();
+    expect(legendToggle.getAttribute('aria-expanded')).toBe('true');
     legendToggle.focus();
 
-    expect(legendDisclosure.hidden).toBe(false);
     media.dispatch(true);
 
-    expect(legendDisclosure.hidden).toBe(true);
+    expect(shell.navigator.hidden).toBe(true);
+    expect(shell.navigator.contains(legendDisclosure)).toBe(true);
     expect(document.activeElement).toBe(shell.card.querySelector('[data-detail-dismiss]'));
     expect(legendDisclosure.contains(document.activeElement)).toBe(false);
   });
@@ -197,6 +197,7 @@ describe('createAppShell', () => {
     expect(detail.hidden).toBe(false);
     expect(detail.textContent).toContain('Integrating smart-material sensing and actuation into textiles and flexible structures.');
     expect(detail.textContent).toContain('A wearable textile structure that senses movement and provides feedback.');
+    expect(legendToggle.getAttribute('aria-expanded')).toBe('true');
     root.querySelector<HTMLButtonElement>('[data-detail-dismiss]')!.click();
     expect(detail.hidden).toBe(true);
     expect(detailToggle.getAttribute('aria-expanded')).toBe('false');
@@ -204,13 +205,17 @@ describe('createAppShell', () => {
     expect(root.querySelector('[data-entity-id=smart-textiles]')?.getAttribute('aria-current')).toBe('true');
     detailToggle.click(); legendToggle.click();
     expect(detail.hidden).toBe(false);
+    expect(legendToggle.getAttribute('aria-expanded')).toBe('false');
+    expect(root.querySelector<HTMLElement>('[data-legend]')!.hidden).toBe(true);
+    expect(options.onDetailDisclosureChange).toHaveBeenLastCalledWith(true);
+    expect(options.onLegendDisclosureChange).toHaveBeenLastCalledWith(false);
+    legendToggle.click();
     expect(legendToggle.getAttribute('aria-expanded')).toBe('true');
     expect(root.querySelector<HTMLElement>('[data-legend]')!.hidden).toBe(false);
-    expect(options.onDetailDisclosureChange).toHaveBeenLastCalledWith(true);
-    expect(options.onLegendDisclosureChange).toHaveBeenCalledWith(true);
+    expect(options.onLegendDisclosureChange).toHaveBeenLastCalledWith(true);
   });
 
-  it('keeps the compact legend out of the open detail sheet geometry and restores access after collapse', () => {
+  it('keeps the docked legend inside the explorer overlay and reachable beside the open detail sheet', () => {
     const media = createCompactMedia(true);
     vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(media));
     const { root, shell } = mount();
@@ -219,18 +224,21 @@ describe('createAppShell', () => {
     const legendToggle = root.querySelector<HTMLButtonElement>('[data-legend-toggle]')!;
 
     expect(shell.card.hidden).toBe(false);
-    expect(legendDisclosure.hidden).toBe(true);
-    expect(legendDisclosure.hasAttribute('hidden')).toBe(true);
+    expect(shell.navigator.hidden).toBe(true);
+    expect(shell.navigator.contains(legendDisclosure)).toBe(true);
+    expect(legendToggle.getAttribute('aria-expanded')).toBe('false');
 
     root.querySelector<HTMLButtonElement>('[data-detail-dismiss]')!.click();
     expect(shell.card.hidden).toBe(true);
-    expect(legendDisclosure.hidden).toBe(false);
+    root.querySelector<HTMLButtonElement>('[data-explorer-toggle]')!.click();
+    expect(shell.navigator.hidden).toBe(false);
     legendToggle.click();
     expect(root.querySelector<HTMLElement>('[data-legend]')!.hidden).toBe(false);
 
     root.querySelector<HTMLButtonElement>('[data-detail-toggle]')!.click();
     expect(shell.card.hidden).toBe(false);
-    expect(legendDisclosure.hidden).toBe(true);
+    expect(shell.navigator.hidden).toBe(false);
+    expect(legendDisclosure.hidden).toBe(false);
     expect(document.activeElement).toBe(shell.card.querySelector('[data-detail-dismiss]'));
   });
 

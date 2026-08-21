@@ -120,7 +120,7 @@ export function createAppShell(root: HTMLElement, entities: readonly Neighborhoo
   detailToggle.setAttribute('aria-controls', card.id);
 
   const legendDisclosure = document.createElement('section');
-  legendDisclosure.className = 'route-legend ui-panel';
+  legendDisclosure.className = 'route-legend';
   legendDisclosure.dataset.safeRegion = '';
   const legendButton = textElement('button', 'Legend', 'route-legend__toggle');
   legendButton.type = 'button'; legendButton.dataset.legendToggle = '';
@@ -163,7 +163,7 @@ export function createAppShell(root: HTMLElement, entities: readonly Neighborhoo
   };
   bindCanvasAccessibility(root.querySelector('canvas'));
 
-  element.append(header, explorerToggle, navigator, detailToggle, card, legendDisclosure, statusRegion, canvasDescription);
+  element.append(header, explorerToggle, navigator, detailToggle, card, statusRegion, canvasDescription);
   root.append(element);
   const canvasObserver = typeof MutationObserver === 'undefined' ? null : new MutationObserver(() => {
     bindCanvasAccessibility(root.querySelector('canvas'));
@@ -173,24 +173,22 @@ export function createAppShell(root: HTMLElement, entities: readonly Neighborhoo
   let currentState = reduceNeighborhoodState(initialNeighborhoodState(), { type: 'ENTER_SCOPE', scopeId: 'cims' });
   let currentViewModel = createAtlasViewModel(currentState, entities, ENTITY_PRESENTATION);
   let detailExpanded = false;
-  let legendExpanded = false;
   const compactMedia = options.compactMedia ?? window.matchMedia?.('(max-width: 900px)');
   let compactLayout = compactMedia?.matches ?? false;
+  let legendExpanded = !compactLayout;
   let explorerExpanded = !compactLayout;
   let reducedMotion = false;
   let disposed = false;
   let lastFocusedElement: HTMLElement | null = null;
   navigator.hidden = !explorerExpanded;
   explorerToggle.setAttribute('aria-expanded', String(explorerExpanded));
+  legend.hidden = !legendExpanded;
+  legendButton.setAttribute('aria-expanded', String(legendExpanded));
 
   const setExplorerExpanded = (expanded: boolean): void => {
     explorerExpanded = expanded;
     navigator.hidden = !expanded;
     explorerToggle.setAttribute('aria-expanded', String(expanded));
-  };
-
-  const syncCompactOverlays = (): void => {
-    legendDisclosure.hidden = compactLayout && detailExpanded && Boolean(currentViewModel.selected);
   };
 
   const onCompactLayoutChange = (event: MediaQueryListEvent): void => {
@@ -202,13 +200,16 @@ export function createAppShell(root: HTMLElement, entities: readonly Neighborhoo
     const focusWillBeHidden = event.matches && (
       focusWasInNavigator
       || focusedElement === reducedMotionButton
-      || (detailExpanded && Boolean(currentViewModel.selected) && legendDisclosure.contains(focusedElement))
     );
     const moveFocusIntoDetail = focusWillBeHidden && detailExpanded && Boolean(currentViewModel.selected);
     if (moveFocusIntoDetail) focusOpenDetail();
     compactLayout = event.matches;
+    if (compactLayout && legendExpanded) {
+      legendExpanded = false;
+      legend.hidden = true;
+      legendButton.setAttribute('aria-expanded', 'false');
+    }
     setExplorerExpanded(!compactLayout);
-    syncCompactOverlays();
     if (focusWillBeHidden && !moveFocusIntoDetail) {
       (focusWasInNavigator ? explorerToggle : overviewButton).focus();
     }
@@ -251,11 +252,14 @@ export function createAppShell(root: HTMLElement, entities: readonly Neighborhoo
   };
 
   const renderNavigator = (viewModel: AtlasViewModel): void => {
-    const focusedId = document.activeElement instanceof HTMLButtonElement
-      && navigator.contains(document.activeElement)
-      ? document.activeElement.dataset.entityId
+    const activeElement = document.activeElement;
+    const focusedId = activeElement instanceof HTMLButtonElement
+      && navigator.contains(activeElement)
+      ? activeElement.dataset.entityId
       : undefined;
-    navigator.replaceChildren(textElement('h2', 'Explore the Atlas', 'organization-nav__title'));
+    const legendWasFocused = legendDisclosure.contains(activeElement);
+    const scrollList = document.createElement('div');
+    scrollList.className = 'organization-nav__scroll';
     for (const category of viewModel.categories) {
       const section = document.createElement('section');
       section.className = 'organization-nav__group';
@@ -278,10 +282,17 @@ export function createAppShell(root: HTMLElement, entities: readonly Neighborhoo
         button.addEventListener('click', () => item.scopeAction ? options.onScope?.(item.scopeAction) : options.onSelect(item.id));
         listItem.append(button); list.append(listItem);
       }
-      section.append(heading, list); navigator.append(section);
+      section.append(heading, list); scrollList.append(section);
     }
+    navigator.replaceChildren(
+      textElement('h2', 'Explore the Atlas', 'organization-nav__title'),
+      scrollList,
+      legendDisclosure,
+    );
     if (focusedId) {
       navigator.querySelector<HTMLButtonElement>(`[data-entity-id="${focusedId}"]`)?.focus();
+    } else if (legendWasFocused) {
+      legendButton.focus();
     }
   };
 
@@ -325,7 +336,6 @@ export function createAppShell(root: HTMLElement, entities: readonly Neighborhoo
     card.hidden = !expanded || !currentViewModel.selected;
     detailToggle.setAttribute('aria-expanded', String(expanded));
     detailToggle.textContent = expanded ? 'Hide Details' : 'Show Details';
-    syncCompactOverlays();
     options.onDetailDisclosureChange?.(expanded);
   };
 
@@ -341,7 +351,6 @@ export function createAppShell(root: HTMLElement, entities: readonly Neighborhoo
       if (state.selectedId && compactLayout) setExplorerExpanded(false);
     }
     renderBreadcrumbs(viewModel); renderNavigator(viewModel); renderDetail(viewModel);
-    syncCompactOverlays();
     if (selectionChanged && state.selectedId && compactLayout) focusOpenDetail();
     if (state.selectedId) overviewButton.removeAttribute('aria-current');
     else overviewButton.setAttribute('aria-current', 'true');
@@ -374,7 +383,6 @@ export function createAppShell(root: HTMLElement, entities: readonly Neighborhoo
       if (compactLayout) setExplorerExpanded(false);
       detailExpanded = true;
       renderDetail(currentViewModel);
-      syncCompactOverlays();
       if (compactLayout) focusOpenDetail();
       return;
     }
@@ -383,7 +391,6 @@ export function createAppShell(root: HTMLElement, entities: readonly Neighborhoo
     detailToggle.hidden = true;
     card.hidden = true;
     card.replaceChildren();
-    syncCompactOverlays();
   };
 
   const setReducedMotion = (reduced: boolean): void => {

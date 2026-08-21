@@ -273,6 +273,24 @@ describe('campus assembly', () => {
     }
   });
 
+  it('keeps every placed tree and bush crown clear of every non-land entity footprint', () => {
+    const campus = build();
+    const vegetation = directGroup(campus, 'vegetation');
+    const blockers = ENTITIES.filter((entity) => entity.id !== 'sei').map((entity) => LAYOUT_BY_ID.get(entity.id)!);
+    const crownClearance: Record<string, number> = { 'tree:deciduous': 3.5, 'tree:conifer': 2.5, bush: 1.5 };
+
+    expect(vegetation.children.length).toBeGreaterThan(0);
+    for (const child of vegetation.children) {
+      const clearance = crownClearance[child.name] ?? -1;
+      expect(clearance, `unexpected vegetation child: ${child.name}`).toBeGreaterThan(0);
+      for (const node of blockers) {
+        const outsideX = Math.abs(child.position.x - node.position[0]) > node.footprint[0] / 2 + clearance;
+        const outsideZ = Math.abs(child.position.z - node.position[2]) > node.footprint[1] / 2 + clearance;
+        expect(outsideX || outsideZ, `${child.name} at ${child.position.x},${child.position.z} overlaps ${node.entityId}`).toBe(true);
+      }
+    }
+  });
+
   it('keeps every context instance outside every non-land entity visual', () => {
     const campus = build();
     campus.root.updateMatrixWorld(true);

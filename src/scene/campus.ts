@@ -8,7 +8,7 @@ import type { LayoutNode } from './layout';
 import type { MaterialPalette } from './materials';
 import { createRoute, disposeRoute } from './routes';
 import { createUrbanFabric, disposeUrbanFabric } from './urbanFabric';
-import { createTree, createBush, disposeVegetation } from './vegetation';
+import { createTree, createBush, disposeVegetation, type TreeType } from './vegetation';
 
 export interface CampusVisual {
   root: THREE.Group;
@@ -161,6 +161,48 @@ function createRoutes(
   return routes;
 }
 
+// Crown extents mirror the vegetation module geometry: deciduous crown radius 3.5,
+// conifer crown radius 2.5, bush lobes within 1.5.
+const TREE_CLEARANCE: Record<TreeType, number> = { deciduous: 3.5, conifer: 2.5 };
+const BUSH_CLEARANCE = 1.5;
+
+interface VegetationBlocker {
+  x: number;
+  z: number;
+  halfWidth: number;
+  halfDepth: number;
+}
+
+function vegetationBlockers(
+  entities: readonly NeighborhoodEntity[],
+  layout: ReadonlyMap<string, LayoutNode>,
+): VegetationBlocker[] {
+  return entities
+    .filter((entity) => entity.id !== 'sei') // SEi is the land surface, not an obstacle
+    .map((entity) => {
+      const node = layout.get(entity.id)!;
+      return {
+        x: node.position[0],
+        z: node.position[2],
+        halfWidth: node.footprint[0] / 2,
+        halfDepth: node.footprint[1] / 2,
+      };
+    });
+}
+
+function vegetationFits(
+  x: number,
+  z: number,
+  clearance: number,
+  blockers: readonly VegetationBlocker[],
+): boolean {
+  return blockers.every(
+    (blocker) =>
+      Math.abs(x - blocker.x) > blocker.halfWidth + clearance
+      || Math.abs(z - blocker.z) > blocker.halfDepth + clearance,
+  );
+}
+
 export function createCampus(args: {
   entities: readonly NeighborhoodEntity[];
   layout: ReadonlyMap<string, LayoutNode>;
@@ -229,13 +271,16 @@ export function createCampus(args: {
   ];
   const vegetationDisposers: Array<() => void> = [];
   if (contextDensity > 0) {
+    const blockers = vegetationBlockers(args.entities, args.layout);
     for (const { pos, type } of treePositions) {
+      if (!vegetationFits(pos[0], pos[1], TREE_CLEARANCE[type], blockers)) continue;
       const tree = createTree(type, args.palette);
       tree.position.set(pos[0], 0, pos[1]);
       vegetationGroup.add(tree);
       vegetationDisposers.push(() => disposeVegetation(tree));
     }
     for (const pos of bushPositions) {
+      if (!vegetationFits(pos[0], pos[1], BUSH_CLEARANCE, blockers)) continue;
       const bush = createBush(args.palette);
       bush.position.set(pos[0], 0, pos[1]);
       vegetationGroup.add(bush);
