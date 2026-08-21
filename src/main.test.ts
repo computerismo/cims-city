@@ -269,7 +269,7 @@ describe('mountNeighborhood', () => {
     document.querySelector<HTMLButtonElement>('[data-entity-id="shape-memory-alloys"]')!.click();
     document.querySelector<HTMLButtonElement>('[data-overview]')!.click();
 
-    expect(document.querySelector('.entity-card h2')?.textContent).toBe('Overview');
+    expect((document.querySelector('.entity-card') as HTMLElement | null)?.hidden).toBe(true);
     expect(harness.appearanceClears).toHaveLength(1);
     expect(harness.cameraOverviews).toHaveLength(2);
     expect(harness.labelUpdates.at(-1)?.selectedId).toBeNull();

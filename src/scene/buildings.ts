@@ -97,11 +97,13 @@ function createIconicBuilding(id: string, palette: MaterialPalette, archetype: B
     const hw = w / 2 + 0.3;
     const hd = d / 2 + 0.3;
     const ry = 0.6 + totalHeight;
+    // Apex leads the winding so each slope's front face points up/outward;
+    // with the apex last the normals flip inward and FrontSide culls the roof.
     const positions = new Float32Array([
-      -hw, ry, -hd,  hw, ry, -hd,  0, ry + 2.5, 0,
-      hw, ry, -hd,  hw, ry, hd,   0, ry + 2.5, 0,
-      hw, ry, hd,   -hw, ry, hd,  0, ry + 2.5, 0,
-      -hw, ry, hd,  -hw, ry, -hd, 0, ry + 2.5, 0,
+      -hw, ry, -hd,  0, ry + 2.5, 0,  hw, ry, -hd,
+      hw, ry, -hd,   0, ry + 2.5, 0,  hw, ry, hd,
+      hw, ry, hd,    0, ry + 2.5, 0,  -hw, ry, hd,
+      -hw, ry, hd,   0, ry + 2.5, 0,  -hw, ry, -hd,
     ]);
     roofGeom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     roofGeom.computeVertexNormals();
@@ -318,10 +320,10 @@ function createLShapedBuilding(id: string, palette: MaterialPalette): THREE.Grou
   // Roof main (pitched)
   const roofMain = new THREE.BufferGeometry();
   const rmPositions = new Float32Array([
-    -6, 4.5, -3, 2, 4.5, -3, -2, 6.5, 0,
-    2, 4.5, -3, 2, 4.5, 3, -2, 6.5, 0,
-    2, 4.5, 3, -6, 4.5, 3, -2, 6.5, 0,
-    -6, 4.5, 3, -6, 4.5, -3, -2, 6.5, 0,
+    -6, 4.5, -3, -2, 6.5, 0, 2, 4.5, -3,
+    2, 4.5, -3, -2, 6.5, 0, 2, 4.5, 3,
+    2, 4.5, 3, -2, 6.5, 0, -6, 4.5, 3,
+    -6, 4.5, 3, -2, 6.5, 0, -6, 4.5, -3,
   ]);
   roofMain.setAttribute('position', new THREE.BufferAttribute(rmPositions, 3));
   roofMain.computeVertexNormals();
@@ -412,10 +414,10 @@ function createOrganicBuilding(id: string, palette: MaterialPalette): THREE.Grou
   // Roof volume 1 (pitched)
   const roof1 = new THREE.BufferGeometry();
   const r1Positions = new Float32Array([
-    -5, 4.5, -3, 3, 4.5, -3, -1, 6.5, 0,
-    3, 4.5, -3, 3, 4.5, 3, -1, 6.5, 0,
-    3, 4.5, 3, -5, 4.5, 3, -1, 6.5, 0,
-    -5, 4.5, 3, -5, 4.5, -3, -1, 6.5, 0,
+    -5, 4.5, -3, -1, 6.5, 0, 3, 4.5, -3,
+    3, 4.5, -3, -1, 6.5, 0, 3, 4.5, 3,
+    3, 4.5, 3, -1, 6.5, 0, -5, 4.5, 3,
+    -5, 4.5, 3, -1, 6.5, 0, -5, 4.5, -3,
   ]);
   roof1.setAttribute('position', new THREE.BufferAttribute(r1Positions, 3));
   roof1.computeVertexNormals();
@@ -476,17 +478,17 @@ function createClusteredBuilding(id: string, palette: MaterialPalette): THREE.Gr
     const ry = 0.5 + v.size[1];
     const roofPositions = new Float32Array([
       v.pos[0] - hw, ry, v.pos[2] - hd,
-      v.pos[0] + hw, ry, v.pos[2] - hd,
       v.pos[0], ry + v.roofH, v.pos[2],
       v.pos[0] + hw, ry, v.pos[2] - hd,
-      v.pos[0] + hw, ry, v.pos[2] + hd,
+      v.pos[0] + hw, ry, v.pos[2] - hd,
       v.pos[0], ry + v.roofH, v.pos[2],
       v.pos[0] + hw, ry, v.pos[2] + hd,
-      v.pos[0] - hw, ry, v.pos[2] + hd,
+      v.pos[0] + hw, ry, v.pos[2] + hd,
       v.pos[0], ry + v.roofH, v.pos[2],
       v.pos[0] - hw, ry, v.pos[2] + hd,
+      v.pos[0] - hw, ry, v.pos[2] + hd,
+      v.pos[0], ry + v.roofH, v.pos[2],
       v.pos[0] - hw, ry, v.pos[2] - hd,
-      v.pos[0], ry + v.roofH, v.pos[2],
     ]);
     roofGeom.setAttribute('position', new THREE.BufferAttribute(roofPositions, 3));
     roofGeom.computeVertexNormals();

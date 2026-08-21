@@ -65,7 +65,7 @@ test('desktop keyboard selection synchronizes the navigator, card, label, and Es
 
   await page.keyboard.press('Escape');
   await expect(page.locator('button[data-overview]')).toHaveAttribute('aria-current', 'true');
-  await expect(page.locator('.entity-card').getByRole('heading', { name: 'Overview' })).toBeVisible();
+  await expect(page.locator('.entity-card')).toBeHidden();
   await expect(page.locator('[data-label-id="smart-textiles"]')).toHaveAttribute('data-selected', 'false');
   expect(browserErrors).toEqual([]);
 });
@@ -272,7 +272,7 @@ for (const viewport of [
       await page.locator('button[data-explorer-toggle]').click();
     }
     await expect(page.getByRole('navigation', { name: 'Organization' })).toBeVisible();
-    await expect(page.locator('.entity-card').getByRole('heading', { name: 'Overview' })).toBeVisible();
+    await expect(page.locator('.entity-card')).toBeHidden();
     if (viewport.width > 768) {
       await expect(page.locator('[data-label-id="cims-hub"]')).toBeVisible();
     }
@@ -343,7 +343,7 @@ test('Back and Overview controls preserve semantic navigation', async ({ page })
 
   await page.locator('button[data-overview]').click();
   await expect(page.locator('button[data-overview]')).toHaveAttribute('aria-current', 'true');
-  await expect(page.locator('.entity-card').getByRole('heading', { name: 'Overview' })).toBeVisible();
+  await expect(page.locator('.entity-card')).toBeHidden();
 });
 
 test('every interactive control has an accessible name and minimum touch target', async ({ page }) => {

@@ -50,6 +50,23 @@ function isEditingTarget(target: EventTarget | null): boolean {
     || Boolean(target.closest('[contenteditable]:not([contenteditable=false])'));
 }
 
+function reduceMotionIcon(): SVGSVGElement {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.classList.add('atlas-header__icon');
+  const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  dot.setAttribute('cx', '5'); dot.setAttribute('cy', '12'); dot.setAttribute('r', '2.5');
+  svg.append(dot);
+  for (const [x1, y1, x2, y2] of [[13, 5, 21, 5], [10, 12, 21, 12], [13, 19, 21, 19]]) {
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', String(x1)); line.setAttribute('y1', String(y1));
+    line.setAttribute('x2', String(x2)); line.setAttribute('y2', String(y2));
+    svg.append(line);
+  }
+  return svg;
+}
+
 export function createAppShell(root: HTMLElement, entities: readonly NeighborhoodEntity[], options: AppShellOptions): AppShell {
   const shellId = shellSequence++;
   const element = document.createElement('div');
@@ -58,27 +75,24 @@ export function createAppShell(root: HTMLElement, entities: readonly Neighborhoo
   const header = document.createElement('header');
   header.className = 'atlas-header ui-panel';
   header.dataset.safeRegion = '';
-  const titleGroup = document.createElement('div');
-  titleGroup.className = 'atlas-header__title-group';
-  titleGroup.append(textElement('p', 'Saarland Engineering Institute', 'atlas-header__eyebrow'));
-  titleGroup.append(textElement('h1', 'Semantic Institutional Atlas', 'atlas-header__title'));
+  header.append(textElement('h1', 'Semantic Institutional Atlas', 'atlas-header__title visually-hidden'));
   const breadcrumb = document.createElement('nav');
   breadcrumb.className = 'atlas-breadcrumb';
   breadcrumb.setAttribute('aria-label', 'Breadcrumb');
   const breadcrumbList = document.createElement('ol');
   breadcrumb.append(breadcrumbList);
-  titleGroup.append(breadcrumb);
   const globalActions = document.createElement('div');
   globalActions.className = 'atlas-header__actions';
-  const backButton = textElement('button', 'Back');
-  backButton.type = 'button'; backButton.dataset.back = '';
   const overviewButton = textElement('button', 'Overview');
   overviewButton.type = 'button'; overviewButton.dataset.overview = '';
-  const reducedMotionButton = textElement('button', 'Reduce Motion');
+  const reducedMotionButton = document.createElement('button');
   reducedMotionButton.type = 'button'; reducedMotionButton.dataset.reducedMotion = '';
+  reducedMotionButton.className = 'atlas-header__icon-toggle';
+  reducedMotionButton.setAttribute('aria-label', 'Reduce Motion');
   reducedMotionButton.setAttribute('aria-pressed', 'false');
-  globalActions.append(backButton, overviewButton, reducedMotionButton);
-  header.append(titleGroup, globalActions);
+  reducedMotionButton.append(reduceMotionIcon());
+  globalActions.append(overviewButton, reducedMotionButton);
+  header.append(breadcrumb, globalActions);
 
   const explorerToggle = textElement('button', 'Explore Organizations', 'explorer-toggle ui-panel');
   explorerToggle.type = 'button'; explorerToggle.dataset.explorerToggle = '';
@@ -92,7 +106,7 @@ export function createAppShell(root: HTMLElement, entities: readonly Neighborhoo
   navigator.setAttribute('aria-label', 'Organization');
   navigator.tabIndex = -1;
 
-  const detailToggle = textElement('button', 'Show Selected Details', 'detail-toggle ui-panel');
+  const detailToggle = textElement('button', 'Show Details', 'detail-toggle ui-panel');
   detailToggle.type = 'button'; detailToggle.dataset.detailToggle = '';
   detailToggle.hidden = true;
   detailToggle.setAttribute('aria-expanded', 'false');
@@ -108,7 +122,7 @@ export function createAppShell(root: HTMLElement, entities: readonly Neighborhoo
   const legendDisclosure = document.createElement('section');
   legendDisclosure.className = 'route-legend ui-panel';
   legendDisclosure.dataset.safeRegion = '';
-  const legendButton = textElement('button', 'Connection Legend', 'route-legend__toggle');
+  const legendButton = textElement('button', 'Legend', 'route-legend__toggle');
   legendButton.type = 'button'; legendButton.dataset.legendToggle = '';
   legendButton.setAttribute('aria-expanded', 'false');
   const legend = document.createElement('div');
@@ -203,11 +217,34 @@ export function createAppShell(root: HTMLElement, entities: readonly Neighborhoo
 
   const renderBreadcrumbs = (viewModel: AtlasViewModel): void => {
     breadcrumbList.replaceChildren();
-    for (const item of viewModel.breadcrumbs) {
+    const parents = viewModel.breadcrumbs.filter((item) => !item.current);
+    for (const [index, item] of viewModel.breadcrumbs.entries()) {
       const listItem = document.createElement('li');
-      const label = document.createElement('span');
+      if (item.current) {
+        const label = document.createElement('span');
+        label.textContent = item.label;
+        label.setAttribute('aria-current', 'page');
+        listItem.append(label);
+        breadcrumbList.append(listItem);
+        continue;
+      }
+      const isImmediateParent = index === parents.length - 1;
+      const label = document.createElement('button');
+      label.type = 'button';
+      label.className = 'atlas-breadcrumb__crumb';
       label.textContent = item.label;
-      if (item.current) label.setAttribute('aria-current', 'page');
+      if (isImmediateParent) {
+        label.dataset.back = '';
+        label.setAttribute('aria-label', `Back to ${item.label}`);
+      } else {
+        label.setAttribute('aria-label', `Go to ${item.label}`);
+      }
+      label.addEventListener('click', () => {
+        if (isImmediateParent) options.onBack?.();
+        else if (item.id === 'sei') options.onScope?.('sei');
+        else if (item.id === 'cims-hub') options.onScope?.('cims');
+        else options.onSelect(item.id);
+      });
       listItem.append(label);
       breadcrumbList.append(listItem);
     }
@@ -280,14 +317,14 @@ export function createAppShell(root: HTMLElement, entities: readonly Neighborhoo
     }
     card.hidden = !detailExpanded;
     detailToggle.setAttribute('aria-expanded', String(detailExpanded));
-    detailToggle.textContent = detailExpanded ? 'Hide Selected Details' : 'Show Selected Details';
+    detailToggle.textContent = detailExpanded ? 'Hide Details' : 'Show Details';
   };
 
   const setDetailExpanded = (expanded: boolean): void => {
     detailExpanded = expanded;
     card.hidden = !expanded || !currentViewModel.selected;
     detailToggle.setAttribute('aria-expanded', String(expanded));
-    detailToggle.textContent = expanded ? 'Hide Selected Details' : 'Show Selected Details';
+    detailToggle.textContent = expanded ? 'Hide Details' : 'Show Details';
     syncCompactOverlays();
     options.onDetailDisclosureChange?.(expanded);
   };
@@ -306,7 +343,6 @@ export function createAppShell(root: HTMLElement, entities: readonly Neighborhoo
     renderBreadcrumbs(viewModel); renderNavigator(viewModel); renderDetail(viewModel);
     syncCompactOverlays();
     if (selectionChanged && state.selectedId && compactLayout) focusOpenDetail();
-    backButton.disabled = state.scopeId === 'sei' && !state.selectedId;
     if (state.selectedId) overviewButton.removeAttribute('aria-current');
     else overviewButton.setAttribute('aria-current', 'true');
     element.dataset.scope = state.scopeId;
@@ -345,11 +381,8 @@ export function createAppShell(root: HTMLElement, entities: readonly Neighborhoo
     overviewButton.setAttribute('aria-current', 'true');
     detailExpanded = false;
     detailToggle.hidden = true;
-    card.hidden = false;
-    card.replaceChildren(
-      textElement('h2', 'Overview'),
-      textElement('p', 'Explore the SEi institutional atlas with the organization navigator.'),
-    );
+    card.hidden = true;
+    card.replaceChildren();
     syncCompactOverlays();
   };
 
@@ -418,7 +451,6 @@ export function createAppShell(root: HTMLElement, entities: readonly Neighborhoo
     setExplorerExpanded(true);
     navigator.focus();
   };
-  backButton.addEventListener('click', () => options.onBack?.());
   overviewButton.addEventListener('click', options.onOverview);
   retryButton.addEventListener('click', () => options.onRetry?.());
   reducedMotionButton.addEventListener('click', () => { setReducedMotion(!reducedMotion); options.onReducedMotionChange?.(reducedMotion); });
