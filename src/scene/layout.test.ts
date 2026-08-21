@@ -49,7 +49,7 @@ describe('organizational campus layout', () => {
       expect(Math.hypot(layout.position[0] - hub.position[0], layout.position[2] - hub.position[2])).toBeCloseTo(30, 6);
       expect(layout.position[1]).toBe(0);
       expect(layout.footprint).toEqual([14, 10]);
-      expect(layout.focus.distance).toBe(25);
+      expect(layout.focus.distance).toBe(38);
       expect(layout.focus.target[1]).toBe(3);
     }
   });

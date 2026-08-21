@@ -11,10 +11,15 @@ function relativeLuminance(hex: string): number {
 }
 
 const roleColors = {
-  ground: '#d0d4cc',
+  ground: '#899c76',
   path: '#b8bcb4',
-  groupShell: '#e0ddd5',
-  civicHub: '#d8d4cc',
+  groupShell: '#cec7b9',
+  thermalShell: '#e3b89a',
+  polymerShell: '#d4b8d4',
+  electronicsShell: '#b4c2d6',
+  textileShell: '#d8bc9c',
+  smaShell: '#c2d2ae',
+  civicHub: '#c4bdb1',
   darkMetal: '#3a3a3a',
   glass: '#a0c0d0',
   thermalWarm: '#e87840',
@@ -23,18 +28,20 @@ const roleColors = {
   electronics: '#7090b0',
   textile: '#c89060',
   sma: '#90b080',
-  context: '#c0bdb5',
+  context: '#b3ada1',
   selectionEdge: '#f0a050',
   land: '#b8c8a0',
-  clearing: '#e0dcd4',
+  clearing: '#d0c8b8',
   districtAccent: '#8b9e6b',
   routeActive: '#e08040',
   routePreview: '#f0b060',
   routeMuted: '#a0a098',
   pavement: '#c0bdb5',
-  sidewalk: '#d8d4cc',
+  sidewalk: '#cdc7ba',
   curb: '#a0a098',
   grass: '#90b870',
+  foliage: '#6f9e52',
+  bark: '#6b4f3a',
   road: '#8a8a82',
   landDark: '#80a060',
 } as const;
@@ -46,11 +53,11 @@ const textureProperties = [
 ] as const;
 
 describe('Hateno Village material palette', () => {
-  it('provides every semantic role as a distinctly colored MeshToonMaterial', () => {
+  it('provides every semantic role as a distinctly colored MeshStandardMaterial', () => {
     const palette = createMaterialPalette();
 
     for (const role of roles) {
-      expect(palette[role], role).toBeInstanceOf(THREE.MeshToonMaterial);
+      expect(palette[role], role).toBeInstanceOf(THREE.MeshStandardMaterial);
       expect(`#${palette[role].color.getHexString()}`, role).toBe(roleColors[role]);
     }
 
@@ -65,12 +72,53 @@ describe('Hateno Village material palette', () => {
     disposeMaterialPalette(palette);
   });
 
-  it('configures the glass role for transparent shallow-depth rendering', () => {
+  it('configures the glass role for transparent reflective glazing', () => {
     const palette = createMaterialPalette();
 
     expect(palette.glass.transparent).toBe(true);
-    expect(palette.glass.opacity).toBe(0.55);
-    expect(palette.glass.depthWrite).toBe(false);
+    expect(palette.glass.opacity).toBe(0.4);
+    expect(palette.glass.depthWrite).toBe(true);
+    expect(palette.glass.roughness).toBeLessThanOrEqual(0.2);
+
+    disposeMaterialPalette(palette);
+  });
+
+  it('gives each research district a shell tint distinct from the neutral fabric', () => {
+    const palette = createMaterialPalette();
+
+    const neutral = `#${palette.groupShell.color.getHexString()}`;
+    const motifShells = [
+      palette.thermalShell, palette.polymerShell, palette.electronicsShell,
+      palette.textileShell, palette.smaShell,
+    ];
+    for (const shell of motifShells) {
+      expect(`#${shell.color.getHexString()}`).not.toBe(neutral);
+    }
+    expect(new Set(motifShells.map((shell) => `#${shell.color.getHexString()}`)).size).toBe(5);
+
+    disposeMaterialPalette(palette);
+  });
+
+  it('keeps vegetation green: foliage darker than grass, bark non-metallic brown', () => {
+    const palette = createMaterialPalette();
+
+    const foliageLum = relativeLuminance(`#${palette.foliage.color.getHexString()}`);
+    const grassLum = relativeLuminance(`#${palette.grass.color.getHexString()}`);
+    expect(foliageLum).toBeLessThan(grassLum);
+    expect(palette.foliage.roughness).toBeGreaterThanOrEqual(0.95);
+    expect(palette.bark.metalness).toBe(0);
+
+    disposeMaterialPalette(palette);
+  });
+
+  it('tunes PBR response per role: matte dielectrics, anodized dark metal', () => {
+    const palette = createMaterialPalette();
+
+    expect(palette.ground.roughness).toBeGreaterThanOrEqual(0.95);
+    expect(palette.ground.metalness).toBe(0);
+    expect(palette.darkMetal.roughness).toBeLessThanOrEqual(0.5);
+    expect(palette.darkMetal.metalness).toBeGreaterThanOrEqual(0.8);
+    expect(palette.groupShell.roughness).toBeLessThan(palette.ground.roughness);
 
     disposeMaterialPalette(palette);
   });

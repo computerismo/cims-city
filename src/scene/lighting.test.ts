@@ -10,12 +10,14 @@ describe('daylight rig', () => {
     expect(rig.root.name).toBe('lighting:daylight');
     expect(rig.sun.name).toBe('light:sun');
     expect(rig.sun.position.toArray()).toEqual([30, 45, 20]);
-    expect(`#${rig.sun.color.getHexString()}`).toBe('#ffffff');
+    expect(`#${rig.sun.color.getHexString()}`).toBe('#fff1e0');
+    expect(rig.sun.intensity).toBe(3.0);
     expect(rig.sun.castShadow).toBe(true);
     expect(rig.sun.target.position.toArray()).toEqual([0, 0, 0]);
     expect(rig.fill.name).toBe('light:hemisphere');
     expect(`#${rig.fill.color.getHexString()}`).toBe('#dbe9ee');
-    expect(`#${rig.fill.groundColor.getHexString()}`).toBe('#8d938d');
+    expect(`#${rig.fill.groundColor.getHexString()}`).toBe('#93918d');
+    expect(rig.fill.intensity).toBe(0.5);
     expect(rig.fill.castShadow).toBe(false);
     expect(rig.lights).toEqual([rig.sun, rig.fill]);
     expect(rig.root.children).toEqual(expect.arrayContaining([rig.sun, rig.fill, rig.sun.target]));
@@ -26,7 +28,7 @@ describe('daylight rig', () => {
     expect(rig.sun.shadow.camera.bottom).toBe(-70);
     expect(rig.sun.shadow.camera.near).toBe(1);
     expect(rig.sun.shadow.camera.far).toBe(120);
-    expect(rig.sun.shadow.normalBias).toBe(0.025);
+    expect(rig.sun.shadow.normalBias).toBe(0.05);
     expect(rig.sun.shadow.bias).toBe(-0.0002);
     expect(rig.lights.filter((light) => light.castShadow)).toHaveLength(1);
   });

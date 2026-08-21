@@ -33,7 +33,7 @@ const groupNodes = GROUP_IDS.map((entityId, index) => {
     cimsHubPosition.x + Math.cos(angle) * GROUP_RADIUS,
     0,
     cimsHubPosition.z + Math.sin(angle) * GROUP_RADIUS,
-  ], GROUP_FOOTPRINT, 25);
+  ], GROUP_FOOTPRINT, 38);
 });
 
 const seiNode: LayoutNode = {
@@ -45,13 +45,13 @@ const seiNode: LayoutNode = {
 
 export const LAYOUT_BY_ID: ReadonlyMap<string, LayoutNode> = new Map([
   seiNode,
-  campusNode('cims-hub', [-60, 0, -20], [20, 14], 30),
+  campusNode('cims-hub', [-60, 0, -20], [20, 14], 45),
   ...groupNodes,
-  campusNode('soft-robotics-lab', [10, 0, 30], [14, 10], 25),
-  campusNode('hycatt', [70, 0, 30], [16, 12], 30),
-  campusNode('new-zema', [60, 0, -50], [16, 12], 30),
-  campusNode('uds', [-100, 0, 80], [12, 8], 25),
-  campusNode('htw-saar', [-10, 0, 80], [12, 8], 25),
+  campusNode('soft-robotics-lab', [10, 0, 30], [14, 10], 38),
+  campusNode('hycatt', [70, 0, 30], [16, 12], 45),
+  campusNode('new-zema', [60, 0, -50], [16, 12], 45),
+  campusNode('uds', [-100, 0, 80], [12, 8], 38),
+  campusNode('htw-saar', [-10, 0, 80], [12, 8], 38),
 ].map((node) => [node.entityId, node]));
 
 export function validateLayout(entityIds: readonly string[], layout: ReadonlyMap<string, LayoutNode>): string[] {

@@ -37,8 +37,8 @@ export function createDaylightRig(scene: THREE.Scene, tier: LightingQualityTier)
   const root = new THREE.Group();
   root.name = 'lighting:daylight';
 
-  // White sun, neutral lighting
-  const sun = new THREE.DirectionalLight('#ffebc5', 1.5);
+  // Warm white sun at HDR intensity for ACES tone mapping
+  const sun = new THREE.DirectionalLight('#fff1e0', 3.0);
   sun.name = 'light:sun';
   sun.position.set(30, 45, 20);
   sun.target.position.set(0, 0, 0);
@@ -49,11 +49,11 @@ export function createDaylightRig(scene: THREE.Scene, tier: LightingQualityTier)
   sun.shadow.camera.near = 1;
   sun.shadow.camera.far = 120;
   sun.shadow.camera.updateProjectionMatrix();
-  sun.shadow.normalBias = 0.025;
+  sun.shadow.normalBias = 0.05;
   sun.shadow.bias = -0.0002;
 
-  // Cool blue-white hemisphere fill
-  const fill = new THREE.HemisphereLight('#dbe9ee', '#93918d', 0.3);
+  // Cool blue-white hemisphere fill (HDR range, softer than the sun)
+  const fill = new THREE.HemisphereLight('#dbe9ee', '#93918d', 0.5);
   fill.name = 'light:hemisphere';
   fill.castShadow = false;
 

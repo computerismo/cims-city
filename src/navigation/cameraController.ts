@@ -217,7 +217,7 @@ export class CameraController {
   private applyLocalLimits(): void {
     this.applyManualLimits();
     this.orbit.minDistance = 7;
-    this.orbit.maxDistance = 45;
+    this.orbit.maxDistance = 60;
   }
 
   private applyFreeExploreLimits(): void {

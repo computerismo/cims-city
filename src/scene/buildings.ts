@@ -88,7 +88,7 @@ function createIconicBuilding(id: string, palette: MaterialPalette, archetype: B
   } else if (archetype.type === 'atrium') {
     // Glass dome roof
     building.add(mesh(
-      new THREE.SphereGeometry(w * 0.4, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2),
+      new THREE.SphereGeometry(w * 0.4, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2),
       palette.glass, 'dome-roof', [0, 0.6 + totalHeight, 0],
     ));
   } else {
@@ -108,23 +108,27 @@ function createIconicBuilding(id: string, palette: MaterialPalette, archetype: B
     building.add(mesh(roofGeom, palette.textile, 'roof', [0, 0, 0]));
   }
 
-  // Windows (2-3 per floor)
-  for (let floor = 0; floor < archetype.floors; floor++) {
-    const windowCount = floor === 0 ? 2 : 3;
-    for (let i = 0; i < windowCount; i++) {
-      const x = -w / 2 + (w / (windowCount + 1)) * (i + 1);
-      const y = 0.6 + floor * floorHeight + floorHeight * 0.5;
-      building.add(mesh(
-        new THREE.BoxGeometry(0.8, 1.0, 0.1),
-        palette.glass, `window:${floor}:${i}`, [x, y, d / 2 + 0.05],
-      ));
+  // Windows (2-3 per floor), proud of the wall to avoid coplanar z-fighting.
+  // Skipped when the glass curtain wall provides the front-face glazing so the
+  // two transparent surfaces never intersect.
+  if (!archetype.hasGlassCurtainWall) {
+    for (let floor = 0; floor < archetype.floors; floor++) {
+      const windowCount = floor === 0 ? 2 : 3;
+      for (let i = 0; i < windowCount; i++) {
+        const x = -w / 2 + (w / (windowCount + 1)) * (i + 1);
+        const y = 0.6 + floor * floorHeight + floorHeight * 0.5;
+        building.add(mesh(
+          new THREE.BoxGeometry(0.8, 1.0, 0.1),
+          palette.glass, `window:${floor}:${i}`, [x, y, d / 2 + 0.06],
+        ));
+      }
     }
   }
 
   // Door
   building.add(mesh(
     new THREE.BoxGeometry(1.2, 2.2, 0.15),
-    palette.darkMetal, 'door', [0, 1.7, d / 2 + 0.08],
+    palette.darkMetal, 'door', [0, 1.7, d / 2 + 0.1],
   ));
 
   // Glass curtain wall
@@ -162,7 +166,7 @@ function createIconicBuilding(id: string, palette: MaterialPalette, archetype: B
   if (archetype.hasAntennas) {
     for (let i = 0; i < 2; i++) {
       building.add(mesh(
-        new THREE.CylinderGeometry(0.04, 0.04, 4, 6),
+        new THREE.CylinderGeometry(0.04, 0.04, 4, 8),
         palette.darkMetal, `antenna:${i}`,
         [w / 4 * (i === 0 ? -1 : 1), 0.6 + totalHeight + 2, 0],
       ));
@@ -173,7 +177,7 @@ function createIconicBuilding(id: string, palette: MaterialPalette, archetype: B
   if (archetype.hasPipes) {
     for (let i = 0; i < 3; i++) {
       building.add(mesh(
-        new THREE.CylinderGeometry(0.08, 0.08, totalHeight * 0.6, 8),
+        new THREE.CylinderGeometry(0.08, 0.08, totalHeight * 0.6, 12),
         palette.darkMetal, `pipe:${i}`,
         [-w / 2 - 0.2, 0.6 + totalHeight * 0.3, -d / 3 + i * (d / 3)],
       ));
@@ -200,11 +204,11 @@ function createIconicBuilding(id: string, palette: MaterialPalette, archetype: B
   if (archetype.hasLedStrips) {
     building.add(mesh(
       new THREE.BoxGeometry(w, 0.08, 0.08),
-      palette.selectionEdge, 'led-strip:bottom', [0, 0.65, d / 2 + 0.1],
+      palette.selectionEdge, 'led-strip:bottom', [0, 0.65, d / 2 + 0.2],
     ));
     building.add(mesh(
       new THREE.BoxGeometry(w, 0.08, 0.08),
-      palette.selectionEdge, 'led-strip:top', [0, 0.6 + totalHeight - 0.04, d / 2 + 0.1],
+      palette.selectionEdge, 'led-strip:top', [0, 0.6 + totalHeight - 0.04, d / 2 + 0.2],
     ));
   }
 
@@ -212,7 +216,7 @@ function createIconicBuilding(id: string, palette: MaterialPalette, archetype: B
   if (archetype.hasCoolingTowers) {
     for (let i = 0; i < 2; i++) {
       building.add(mesh(
-        new THREE.CylinderGeometry(0.6, 0.8, 2.5, 8),
+        new THREE.CylinderGeometry(0.6, 0.8, 2.5, 12),
         palette.context, `cooling-tower:${i}`,
         [w / 3 * (i === 0 ? -1 : 1), 0.6 + totalHeight + 1.25, -d / 3],
       ));
@@ -222,7 +226,7 @@ function createIconicBuilding(id: string, palette: MaterialPalette, archetype: B
   // Satellite dishes
   if (archetype.hasSatelliteDishes) {
     building.add(mesh(
-      new THREE.SphereGeometry(0.5, 8, 4, 0, Math.PI),
+      new THREE.SphereGeometry(0.5, 12, 6, 0, Math.PI),
       palette.darkMetal, 'satellite-dish',
       [w / 4, 0.6 + totalHeight + 0.5, -d / 3],
     ));
@@ -250,36 +254,40 @@ function createRoundHouse(id: string, palette: MaterialPalette, radius: number =
 
   // Stone foundation ring
   house.add(mesh(
-    new THREE.CylinderGeometry(radius + 0.3, radius + 0.5, 0.6, 12),
+    new THREE.CylinderGeometry(radius + 0.3, radius + 0.5, 0.6, 16),
     palette.context, 'foundation', [0, 0.3, 0],
   ));
 
   // Cylindrical walls
   house.add(mesh(
-    new THREE.CylinderGeometry(radius, radius, height, 12),
+    new THREE.CylinderGeometry(radius, radius, height, 16),
     palette.groupShell, 'walls', [0, 0.6 + height / 2, 0],
   ));
 
   // Conical thatched roof
   house.add(mesh(
-    new THREE.ConeGeometry(radius + 0.8, 2.5, 12),
+    new THREE.ConeGeometry(radius + 0.8, 2.5, 16),
     palette.textile, 'roof', [0, 0.6 + height + 1.25, 0],
   ));
 
-  // Door
+  // Door, proud of the curved wall
   house.add(mesh(
     new THREE.BoxGeometry(1.0, 2.0, 0.15),
-    palette.darkMetal, 'door', [0, 1.6, radius - 0.1],
+    palette.darkMetal, 'door', [0, 1.6, radius + 0.02],
   ));
 
-  // Round windows (2)
+  // Round porthole windows, oriented outward and proud of the wall
   for (let i = 0; i < 2; i++) {
     const angle = (i * Math.PI) + Math.PI / 2;
-    house.add(mesh(
-      new THREE.CylinderGeometry(0.4, 0.4, 0.1, 8),
+    const windowGeometry = new THREE.CylinderGeometry(0.4, 0.4, 0.12, 12);
+    windowGeometry.rotateX(Math.PI / 2);
+    const roundWindow = mesh(
+      windowGeometry,
       palette.glass, `window:${i}`,
-      [Math.cos(angle) * (radius - 0.05), height * 0.6, Math.sin(angle) * (radius - 0.05)],
-    ));
+      [Math.cos(angle) * (radius + 0.02), height * 0.6, Math.sin(angle) * (radius + 0.02)],
+    );
+    roundWindow.rotation.y = Math.PI / 2 - angle;
+    house.add(roundWindow);
   }
 
   return house;
@@ -344,36 +352,38 @@ function createTower(id: string, palette: MaterialPalette, floors: number = 4): 
 
   // Foundation
   tower.add(mesh(
-    new THREE.CylinderGeometry(radius + 0.3, radius + 0.5, 0.6, 8),
+    new THREE.CylinderGeometry(radius + 0.3, radius + 0.5, 0.6, 16),
     palette.context, 'foundation', [0, 0.3, 0],
   ));
 
   // Cylindrical tower body
   tower.add(mesh(
-    new THREE.CylinderGeometry(radius, radius, totalHeight, 8),
+    new THREE.CylinderGeometry(radius, radius, totalHeight, 16),
     palette.groupShell, 'body', [0, 0.6 + totalHeight / 2, 0],
   ));
 
   // Conical roof
   tower.add(mesh(
-    new THREE.ConeGeometry(radius + 0.5, 3.0, 8),
+    new THREE.ConeGeometry(radius + 0.5, 3.0, 16),
     palette.textile, 'roof', [0, 0.6 + totalHeight + 1.5, 0],
   ));
 
-  // Windows on each floor
+  // Windows on each floor, oriented outward and proud of the curved body
   for (let floor = 0; floor < floors; floor++) {
     const angle = (floor * Math.PI / 2);
-    tower.add(mesh(
+    const towerWindow = mesh(
       new THREE.BoxGeometry(0.6, 1.0, 0.1),
       palette.glass, `window:${floor}`,
-      [Math.cos(angle) * (radius - 0.05), 0.6 + floor * floorHeight + 1.5, Math.sin(angle) * (radius - 0.05)],
-    ));
+      [Math.cos(angle) * (radius + 0.03), 0.6 + floor * floorHeight + 1.5, Math.sin(angle) * (radius + 0.03)],
+    );
+    towerWindow.rotation.y = Math.PI / 2 - angle;
+    tower.add(towerWindow);
   }
 
-  // Door
+  // Door, proud of the curved wall
   tower.add(mesh(
     new THREE.BoxGeometry(1.0, 2.0, 0.15),
-    palette.darkMetal, 'door', [0, 1.6, radius - 0.1],
+    palette.darkMetal, 'door', [0, 1.6, radius + 0.02],
   ));
 
   return tower;
@@ -417,10 +427,10 @@ function createOrganicBuilding(id: string, palette: MaterialPalette): THREE.Grou
     palette.darkMetal, 'roof-2', [3, 4.1, -1],
   ));
 
-  // Windows
+  // Windows (offset from the door so the glazing never intersects it)
   building.add(mesh(
     new THREE.BoxGeometry(0.8, 1.0, 0.1),
-    palette.glass, 'window-1', [-1, 2.5, 2.6],
+    palette.glass, 'window-1', [-2.5, 2.5, 2.6],
   ));
   building.add(mesh(
     new THREE.BoxGeometry(0.8, 1.0, 0.1),
@@ -822,16 +832,25 @@ function populateVisible(visible: THREE.Group, entity: NeighborhoodEntity, palet
   }
 }
 
+// Returns the palette with the district shell swapped in so each research
+// district's buildings carry its motif color while every other role is shared.
+function withDistrictShell(
+  palette: MaterialPalette,
+  shell: MaterialPalette['groupShell'],
+): MaterialPalette {
+  return { ...palette, groupShell: shell };
+}
+
 function populateResearchGroup(visible: THREE.Group, entity: NeighborhoodEntity, palette: MaterialPalette): number {
   visible.userData = { visualFamily: 'research-group', motif: entity.motif };
 
   let district: THREE.Group;
   switch (entity.motif) {
-    case 'thermal': district = createElastocaloricsDistrict(palette); break;
-    case 'polymer': district = createElectroactivePolymersDistrict(palette); break;
-    case 'electronics': district = createSmartMaterialElectronicsDistrict(palette); break;
-    case 'textile': district = createSmartTextilesDistrict(palette); break;
-    case 'sma': district = createShapeMemoryAlloysDistrict(palette); break;
+    case 'thermal': district = createElastocaloricsDistrict(withDistrictShell(palette, palette.thermalShell)); break;
+    case 'polymer': district = createElectroactivePolymersDistrict(withDistrictShell(palette, palette.polymerShell)); break;
+    case 'electronics': district = createSmartMaterialElectronicsDistrict(withDistrictShell(palette, palette.electronicsShell)); break;
+    case 'textile': district = createSmartTextilesDistrict(withDistrictShell(palette, palette.textileShell)); break;
+    case 'sma': district = createShapeMemoryAlloysDistrict(withDistrictShell(palette, palette.smaShell)); break;
     default: district = createElastocaloricsDistrict(palette);
   }
   visible.add(district);
@@ -1077,19 +1096,42 @@ function populateLand(visible: THREE.Group, layout: LayoutNode, palette: Materia
   // Create flowing terrain with PlaneGeometry and vertex displacement
   const terrainWidth = 400;
   const terrainDepth = 400;
-  const segments = 32;
+  const segments = 48;
   const surfaceGeometry = new THREE.PlaneGeometry(terrainWidth, terrainDepth, segments, segments);
   surfaceGeometry.rotateX(-Math.PI / 2);
 
-  // Add vertex displacement for rolling hills
+  // Flatten the terrain into plateaus under the districts (expanded to cover
+  // streets and plazas) so hills never rise through the clearing platforms.
+  const plateauDisplacement = 0.45; // world y = -0.05, just below platform bases
+  const plateauExpand = 20;
+  const plateauFalloff = 25;
+  const flattenRects = [...DISTRICT_LAYOUT.values()].map((district) => ({
+    minX: district.bounds.min.x - plateauExpand,
+    maxX: district.bounds.max.x + plateauExpand,
+    minZ: district.bounds.min.z - plateauExpand,
+    maxZ: district.bounds.max.z + plateauExpand,
+  }));
+
+  // Add vertex displacement for rolling hills, blended toward the plateaus
   const positions = surfaceGeometry.attributes.position;
   if (positions) {
     for (let i = 0; i < positions.count; i++) {
       const x = positions.getX(i);
       const z = positions.getZ(i);
-      const height = Math.sin(x * 0.05) * Math.cos(z * 0.05) * 1.5
+      const base = Math.sin(x * 0.05) * Math.cos(z * 0.05) * 1.5
         + Math.sin(x * 0.02 + z * 0.03) * 0.8;
-      positions.setY(i, height);
+      // Distance from the district rectangles in world space
+      const wx = x + layout.position[0];
+      const wz = z + layout.position[2];
+      let outside = Infinity;
+      for (const rect of flattenRects) {
+        const dx = Math.max(rect.minX - wx, 0, wx - rect.maxX);
+        const dz = Math.max(rect.minZ - wz, 0, wz - rect.maxZ);
+        outside = Math.min(outside, Math.hypot(dx, dz));
+      }
+      const t = Math.min(outside / plateauFalloff, 1);
+      const flatten = 1 - t * t * (3 - 2 * t); // smoothstep
+      positions.setY(i, base + (plateauDisplacement - base) * flatten);
     }
     positions.needsUpdate = true;
   }

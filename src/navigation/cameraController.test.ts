@@ -194,7 +194,7 @@ describe('CameraController', () => {
     expect(camera.position.distanceTo(orbit.target)).toBeLessThanOrEqual(22);
     expect(orbit.enabled).toBe(true);
     expect(orbit.minDistance).toBe(7);
-    expect(orbit.maxDistance).toBe(45);
+    expect(orbit.maxDistance).toBe(60);
   });
 
   it('finishes guided focus travel in 400ms', () => {
@@ -286,7 +286,7 @@ describe('CameraController', () => {
     controller.update(400);
     expect(updates.count).toBe(constructorUpdates + 1);
     expect(camera.position.distanceTo(orbit.target)).toBeGreaterThanOrEqual(15);
-    expect(orbit.maxDistance).toBe(45);
+    expect(orbit.maxDistance).toBe(60);
 
     controller.showOverview(500);
     controller.update(900);
@@ -473,7 +473,7 @@ describe('CameraController', () => {
     expectVector(camera.up, [0, 1, 0]);
     expect(cameraRight.y).toBeCloseTo(0, 10);
     expect(orbit.minDistance).toBe(7);
-    expect(orbit.maxDistance).toBe(45);
+    expect(orbit.maxDistance).toBe(60);
     expect(orbit.minPolarAngle).toBeCloseTo(25 * DEG, 10);
     expect(orbit.maxPolarAngle).toBeCloseTo(85 * DEG, 10);
 

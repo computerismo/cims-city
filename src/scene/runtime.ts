@@ -101,6 +101,20 @@ export function createSceneRuntime(container: HTMLElement, options: RuntimeOptio
   renderer.domElement.dataset.shadowMap = renderer.shadowMap.enabled ? 'enabled' : 'disabled';
   renderer.domElement.dataset.sceneBackground = `#${sceneBackground.getHexString()}`;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, options.maxDpr));
+
+  // Sky-matched environment map: gives PBR materials soft ambient light and
+  // reflections that match the gradient sky (WebGL renderers only).
+  let skyEnvironment: THREE.Texture | undefined;
+  if (renderer instanceof THREE.WebGLRenderer) {
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    const environmentScene = new THREE.Scene();
+    environmentScene.add(sky.clone());
+    skyEnvironment = pmremGenerator.fromScene(environmentScene, 0.04).texture;
+    pmremGenerator.dispose();
+    scene.environment = skyEnvironment;
+    scene.environmentIntensity = 0.85;
+  }
+
   container.appendChild(renderer.domElement);
 
   const requestFrame = options.requestAnimationFrame ?? window.requestAnimationFrame.bind(window);
@@ -172,6 +186,8 @@ export function createSceneRuntime(container: HTMLElement, options: RuntimeOptio
       frameId = undefined;
     }
     resizeObserver.disconnect();
+    scene.environment = null;
+    skyEnvironment?.dispose();
     if (renderer.domElement.parentElement === container) {
       container.removeChild(renderer.domElement);
     }

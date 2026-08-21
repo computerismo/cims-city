@@ -51,6 +51,53 @@ describe('ground detail', () => {
     disposeMaterialPalette(palette);
   });
 
+  it('keeps every paved surface above the 0.175 clearing platform top', () => {
+    const palette = createMaterialPalette();
+    const detail = createGroundDetail(palette);
+    groups.push(detail);
+
+    const paved = detail.children.filter((child) =>
+      /^(avenue|street|connector|sidewalk|curb|plaza|planted):/.test(child.name),
+    );
+    expect(paved.length).toBeGreaterThan(0);
+    for (const surface of paved) {
+      if (!(surface instanceof THREE.Mesh)) continue;
+      const geometry = surface.geometry as THREE.BoxGeometry;
+      const top = surface.position.y + geometry.parameters.height / 2;
+      expect(top, surface.name).toBeGreaterThan(0.175);
+    }
+
+    disposeMaterialPalette(palette);
+  });
+
+  it('steps avenue tops at distinct heights so crossings never z-fight', () => {
+    const palette = createMaterialPalette();
+    const detail = createGroundDetail(palette);
+    groups.push(detail);
+
+    const avenues = detail.children.filter((child) =>
+      /^avenue:/.test(child.name),
+    ) as THREE.Mesh[];
+    const tops = avenues.map((avenue) => {
+      const geometry = avenue.geometry as THREE.BoxGeometry;
+      return Number((avenue.position.y + geometry.parameters.height / 2).toFixed(3));
+    });
+    expect(new Set(tops).size).toBe(avenues.length);
+
+    disposeMaterialPalette(palette);
+  });
+
+  it('connects the central grid to every outer district with causeways', () => {
+    const palette = createMaterialPalette();
+    const detail = createGroundDetail(palette);
+    groups.push(detail);
+
+    const connectors = detail.children.filter(c => c.name.startsWith('connector'));
+    expect(connectors.length).toBeGreaterThanOrEqual(7);
+
+    disposeMaterialPalette(palette);
+  });
+
   it('disposes geometry on disposal', () => {
     const palette = createMaterialPalette();
     const detail = createGroundDetail(palette);

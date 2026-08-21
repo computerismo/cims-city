@@ -195,6 +195,16 @@ describe('scene runtime', () => {
     runtime.dispose();
   });
 
+  it('skips the sky environment map for non-WebGL renderers (instanceof guard)', () => {
+    const { runtime } = createHarness();
+
+    // The test fake renderer is not a WebGLRenderer, so no PMREM work happens.
+    expect(runtime.scene.environment).toBeNull();
+
+    runtime.dispose();
+    expect(runtime.scene.environment).toBeNull();
+  });
+
   it('retains sRGB output color space and ACES tone mapping', () => {
     const { renderer, runtime } = createHarness();
 

@@ -13,7 +13,7 @@ export function createTree(type: TreeType, palette: MaterialPalette): THREE.Grou
   const trunkHeight = type === 'deciduous' ? 4.0 : 5.0;
   const trunk = new THREE.Mesh(
     new THREE.CylinderGeometry(0.2, 0.3, trunkHeight, 6),
-    palette.darkMetal,
+    palette.bark,
   );
   trunk.position.y = trunkHeight / 2;
   trunk.castShadow = true;
@@ -26,7 +26,7 @@ export function createTree(type: TreeType, palette: MaterialPalette): THREE.Grou
     const angle = (i * Math.PI * 0.8) + Math.PI * 0.2;
     const branch = new THREE.Mesh(
       new THREE.CylinderGeometry(0.05, 0.08, 1.2, 4),
-      palette.darkMetal,
+      palette.bark,
     );
     branch.position.set(
       Math.cos(angle) * 0.4,
@@ -44,7 +44,7 @@ export function createTree(type: TreeType, palette: MaterialPalette): THREE.Grou
     // Spherical crown (icosahedron for low-poly look)
     const crown = new THREE.Mesh(
       new THREE.IcosahedronGeometry(3.5, 1),
-      palette.context,
+      palette.foliage,
     );
     crown.position.y = trunkHeight + 2.0;
     crown.castShadow = true;
@@ -72,7 +72,7 @@ export function createTree(type: TreeType, palette: MaterialPalette): THREE.Grou
     // Conical crown (cone)
     const crown = new THREE.Mesh(
       new THREE.ConeGeometry(2.5, 6.0, 6),
-      palette.sma,
+      palette.foliage,
     );
     crown.position.y = trunkHeight + 3.0;
     crown.castShadow = true;
@@ -116,7 +116,7 @@ export function createBush(palette: MaterialPalette): THREE.Group {
   for (let i = 0; i < positions.length; i++) {
     const sphere = new THREE.Mesh(
       new THREE.SphereGeometry(0.8 + i * 0.12, 6, 4),
-      palette.context,
+      palette.foliage,
     );
     sphere.position.set(positions[i]![0], positions[i]![1], positions[i]![2]);
     sphere.castShadow = true;
