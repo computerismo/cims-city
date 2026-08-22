@@ -101,6 +101,31 @@ describe('procedural entity buildings', () => {
     }
   });
 
+  it('wraps windows around the side and back faces of every iconic building', () => {
+    const iconicIds = [...groupMotifs.map(([id]) => id), 'cims-hub', 'soft-robotics-lab', 'hycatt', 'new-zema', 'uds', 'htw-saar'];
+    for (const id of iconicIds) {
+      const iconicBuildings: THREE.Group[] = [];
+      build(id).root.traverse((child) => {
+        if (child instanceof THREE.Group && child.name.startsWith('iconic:')) iconicBuildings.push(child);
+      });
+      expect(iconicBuildings.length, id).toBeGreaterThan(0);
+      for (const building of iconicBuildings) {
+        const hasCurtainWall = building.children.some((child) => child.name === 'curtain-wall');
+        const glazedFaces = new Set<string>();
+        building.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            const face = /^window:(front|back|left|right):/.exec(child.name);
+            if (face) glazedFaces.add(face[1]!);
+          }
+        });
+        // Curtain-wall fronts are glazed by the curtain wall itself; every
+        // other face carries punched windows.
+        const expectedFaces = hasCurtainWall ? ['back', 'left', 'right'] : ['front', 'back', 'left', 'right'];
+        expect(glazedFaces, `${id} / ${building.name}`).toEqual(new Set(expectedFaces));
+      }
+    }
+  });
+
   it('creates the civic hub as a multi-building district', () => {
     const hub = build('cims-hub');
     expect(hub.visible.userData).toMatchObject({ visualFamily: 'civic-atrium' });

@@ -110,19 +110,32 @@ function createIconicBuilding(id: string, palette: MaterialPalette, archetype: B
     building.add(mesh(roofGeom, palette.textile, 'roof', [0, 0, 0]));
   }
 
-  // Windows (2-3 per floor), proud of the wall to avoid coplanar z-fighting.
-  // Skipped when the glass curtain wall provides the front-face glazing so the
-  // two transparent surfaces never intersect.
-  if (!archetype.hasGlassCurtainWall) {
-    for (let floor = 0; floor < archetype.floors; floor++) {
-      const windowCount = floor === 0 ? 2 : 3;
+  // Windows wrap all four faces (2-3 per floor), proud of the wall to avoid
+  // coplanar z-fighting. The front face is skipped when the glass curtain wall
+  // provides its glazing so the two transparent surfaces never intersect.
+  const windowFaces = archetype.hasGlassCurtainWall
+    ? (['back', 'left', 'right'] as const)
+    : (['front', 'back', 'left', 'right'] as const);
+  for (let floor = 0; floor < archetype.floors; floor++) {
+    const windowCount = floor === 0 ? 2 : 3;
+    const y = 0.6 + floor * floorHeight + floorHeight * 0.5;
+    for (const face of windowFaces) {
       for (let i = 0; i < windowCount; i++) {
-        const x = -w / 2 + (w / (windowCount + 1)) * (i + 1);
-        const y = 0.6 + floor * floorHeight + floorHeight * 0.5;
-        building.add(mesh(
-          new THREE.BoxGeometry(0.8, 1.0, 0.1),
-          palette.glass, `window:${floor}:${i}`, [x, y, d / 2 + 0.06],
-        ));
+        // Even spread along the face, as a -0.5..0.5 fraction of its length.
+        const t = -0.5 + (i + 1) / (windowCount + 1);
+        if (face === 'front' || face === 'back') {
+          building.add(mesh(
+            new THREE.BoxGeometry(0.8, 1.0, 0.1),
+            palette.glass, `window:${face}:${floor}:${i}`,
+            [t * w, y, (face === 'front' ? 1 : -1) * (d / 2 + 0.06)],
+          ));
+        } else {
+          building.add(mesh(
+            new THREE.BoxGeometry(0.1, 1.0, 0.8),
+            palette.glass, `window:${face}:${floor}:${i}`,
+            [(face === 'right' ? 1 : -1) * (w / 2 + 0.06), y, t * d],
+          ));
+        }
       }
     }
   }
@@ -278,9 +291,10 @@ function createRoundHouse(id: string, palette: MaterialPalette, radius: number =
     palette.darkMetal, 'door', [0, 1.6, radius + 0.02],
   ));
 
-  // Round porthole windows, oriented outward and proud of the wall
-  for (let i = 0; i < 2; i++) {
-    const angle = (i * Math.PI) + Math.PI / 2;
+  // Round porthole windows on all four compass faces, oriented outward and
+  // proud of the wall
+  for (let i = 0; i < 4; i++) {
+    const angle = (i * Math.PI / 2) + Math.PI / 2;
     const windowGeometry = new THREE.CylinderGeometry(0.4, 0.4, 0.12, 12);
     windowGeometry.rotateX(Math.PI / 2);
     const roundWindow = mesh(
@@ -370,16 +384,19 @@ function createTower(id: string, palette: MaterialPalette, floors: number = 4): 
     palette.textile, 'roof', [0, 0.6 + totalHeight + 1.5, 0],
   ));
 
-  // Windows on each floor, oriented outward and proud of the curved body
+  // Windows on each floor, oriented outward and proud of the curved body;
+  // two per floor on opposite faces so every side gets glazing
   for (let floor = 0; floor < floors; floor++) {
-    const angle = (floor * Math.PI / 2);
-    const towerWindow = mesh(
-      new THREE.BoxGeometry(0.6, 1.0, 0.1),
-      palette.glass, `window:${floor}`,
-      [Math.cos(angle) * (radius + 0.03), 0.6 + floor * floorHeight + 1.5, Math.sin(angle) * (radius + 0.03)],
-    );
-    towerWindow.rotation.y = Math.PI / 2 - angle;
-    tower.add(towerWindow);
+    for (const side of [0, Math.PI] as const) {
+      const angle = (floor * Math.PI / 2) + side;
+      const towerWindow = mesh(
+        new THREE.BoxGeometry(0.6, 1.0, 0.1),
+        palette.glass, `window:${floor}:${side}`,
+        [Math.cos(angle) * (radius + 0.03), 0.6 + floor * floorHeight + 1.5, Math.sin(angle) * (radius + 0.03)],
+      );
+      towerWindow.rotation.y = Math.PI / 2 - angle;
+      tower.add(towerWindow);
+    }
   }
 
   // Door, proud of the curved wall

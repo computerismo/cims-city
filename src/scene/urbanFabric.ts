@@ -146,9 +146,10 @@ function createContextHouse(index: number, palette: MaterialPalette, options: Co
     createMesh(new THREE.BoxGeometry(1.0, 1.8, 0.12), palette.darkMetal, 'house:door', [0, 1.5, 2.55]),
   );
 
-  // Windows (2)
-  for (let i = 0; i < 2; i++) {
-    const angle = (i * Math.PI) / 2;
+  // Windows on both sides and the back, clear of the front-face door
+  const windowAngles = [0, Math.PI, (3 * Math.PI) / 2];
+  for (let i = 0; i < windowAngles.length; i++) {
+    const angle = windowAngles[i]!;
     const x = Math.cos(angle) * 2.5;
     const z = Math.sin(angle) * 2.5;
     house.add(
